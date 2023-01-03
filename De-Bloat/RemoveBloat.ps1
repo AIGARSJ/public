@@ -826,8 +826,8 @@ $InstalledSoftware32 = Get-ChildItem "HKLM:\Software\WOW6432NODE\Microsoft\Windo
 foreach($obj32 in $InstalledSoftware32){
      $name32 = $obj32.GetValue('DisplayName')
      if (($name32 -notcontains $whitelistapps) -and ($obj32.GetValue('UninstallString') -ne $null)) {
-        $uninstallcommand32 = $obj.GetValue('UninstallString')
-        write-host "Uninstalling $name"
+        $uninstallcommand32 = $obj32.GetValue('UninstallString')
+        write-host "Uninstalling $name32"
                 if ($uninstallcommand32 -like "*msiexec*") {
         $splitcommand = $uninstallcommand32.Split("{")
         $msicode = $splitcommand[1]
