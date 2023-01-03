@@ -843,6 +843,68 @@ foreach($obj32 in $InstalledSoftware32){
     }
 }
 
+## Remove Wizlink bloatware
+
+function Get-Shortcut {
+
+    [CmdletBinding(ConfirmImpact='None')]
+    param(
+        [string] $path
+    )
+
+    begin {
+        Write-Verbose -Message "Starting [$($MyInvocation.Mycommand)]"
+        $obj = New-Object -ComObject WScript.Shell
+    }
+
+    process {
+        if (Test-Path -Path $Path) {
+            $ResolveFile = Resolve-Path -Path $Path
+            if ($ResolveFile.count -gt 1) {
+                Write-Error -Message "ERROR: File specification [$File] resolves to more than 1 file."
+            } else {
+                Write-Verbose -Message "Using file [$ResolveFile] in section [$Section], getting comments"
+                $ResolveFile = Get-Item -Path $ResolveFile
+                if ($ResolveFile.Extension -eq '.lnk') {
+                    $link = $obj.CreateShortcut($ResolveFile.FullName)
+
+                    $info = @{}
+                    $info.Hotkey = $link.Hotkey
+                    $info.TargetPath = $link.TargetPath
+                    $info.LinkPath = $link.FullName
+                    $info.Arguments = $link.Arguments
+                    $info.Target = try {Split-Path -Path $info.TargetPath -Leaf } catch { 'n/a'}
+                    $info.Link = try { Split-Path -Path $info.LinkPath -Leaf } catch { 'n/a'}
+                    $info.WindowStyle = $link.WindowStyle
+                    $info.IconLocation = $link.IconLocation
+
+                    New-Object -TypeName PSObject -Property $info
+                } else {
+                    Write-Error -Message 'Extension is not .lnk'
+                }
+            }
+        } else {
+            Write-Error -Message "ERROR: File [$Path] does not exist"
+        }
+    }
+
+    end {
+        Write-Verbose -Message "Ending [$($MyInvocation.Mycommand)]"
+    }
+}
+
+
+$Shortcuts = (Get-ChildItem -Path "$env:ProgramData\Microsoft\Windows\Start Menu\Programs" | ? {$_.Name -like "*.lnk"}).FullName
+
+foreach ($Shortcut in $Shortcuts) {
+
+Remove-Item -Path ((Get-Shortcut -path $Shortcut) | ? {$_.Target -like "*wizlink*" -or $_.Target -like "n/a"}).LinkPath
+
+}
+
+Remove-Item -Path "${env:CommonProgramFiles(x86)}\Online Services" -Recurse -Force
+
+
 ##Remove Chrome
 $chrome32path = "HKLM:\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\Google Chrome"
 
